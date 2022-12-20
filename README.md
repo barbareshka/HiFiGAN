@@ -14,3 +14,11 @@ Information from the artical:
 > To this end, we propose the multi-period discriminator (MPD) consisting of several sub-discriminators
 > each handling a portion of periodic signals of input audio. Additionally, to capture consecutive patterns
 > and long-term dependencies, we use the multi-scale discriminator (MSD) proposed in MelGAN, which consecutively evaluates audio samples at different levels. 
+
+
+## Running
+
+1) download LJSpeech dataset (you can do it [here](https://keithito.com/LJ-Speech-Dataset/) and add all wav files to folder LJSPEECH/data
+2) install all packages from requirements.txt
+3) Run training via
+> python training.py --config initialize/config_v1.json
