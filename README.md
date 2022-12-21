@@ -18,7 +18,11 @@ Information from the artical:
 
 ## Running
 
-1) download LJSpeech dataset (you can do it [here](https://keithito.com/LJ-Speech-Dataset/) and add all wav files to folder LJSPEECH/data
+1) download LJSpeech dataset (you can do it [here](https://keithito.com/LJ-Speech-Dataset/)) and add all .wav files to folder LJSPEECH/data
 2) install all packages from requirements.txt
 3) Run training via
 > python training.py --config initialize/config_v1.json
+
+
+## Possible problems
+I decided to run my code on Google Colab, so there're some notes about running: check you're using GPU
