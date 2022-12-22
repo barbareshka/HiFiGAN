@@ -20,9 +20,30 @@ Information from the artical:
 
 1) download LJSpeech dataset (you can do it [here](https://keithito.com/LJ-Speech-Dataset/)) and add all .wav files to folder LJSPEECH/data
 2) install all packages from requirements.txt
-3) Run training via
-> python training.py --config initialize/config_v1.json
+3) write by yourself or (take mine) config file, put it in to the folder initialize/
+4) Run training via
+> python training.py --config initialize/config.json
 
 
 ## Possible problems
 I decided to run my code on Google Colab, so there're some notes about running: check you're using GPU
+
+## Experiments
+After all, we need to test our code on LJSpeech dataset and do some research. Actually, I decided to compare results of the model training with different configs and pay attention to three measures: time, general loss and mel loss
+
+### experiment 1 - epochs
+Let's try to train the model on 1, 10, 100, 500, 1000, 3000 epochs, batch size is 32 (constant)
+Naive prediction
+Reality - 
+
+### experiment 2 - batches
+Let's try to train the model with batch_size = 1, 8, 16, 32, num_epochs = 500
+
+### experiment 3 - train dataset size
+Before everything I prepared 5 datasets (folder /initialize), these datasets (plus original one) will take part in the experiment. I trained my model on them (with values from previous experiments) and compared all results
+Summary: that's it
+
+Some notes about running these experiments on your own, because they take plenty of time:
+1) you can choose one of the small training files (training1, training2, training3, training4, training5) or test your network on the whole dataset (training.txt). The same - with validation
+2) also you can choose the config file to increase/decrease epoch count or other parameters
+
