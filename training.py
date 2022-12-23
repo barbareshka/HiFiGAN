@@ -1,10 +1,12 @@
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
+import argparse
+import glob
 import itertools
+import json
 import os
 import time
-import argparse
-import json
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 import torch
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
@@ -12,12 +14,20 @@ from torch.utils.data import DistributedSampler, DataLoader
 import torch.multiprocessing as mp
 from torch.distributed import init_process_group
 from torch.nn.parallel import DistributedDataParallel
+
 from meldataset import MelDataset, MelTunedDataset, mel_spectrogram, get_dataset_filelist
 from hifigan import Generator, MultiPeriodDiscriminator, MultiScaleDiscriminator, feature_loss, generator_loss,\
     discriminator_loss
 from tools import scan_checkpoint
 
 torch.backends.cudnn.benchmark = True
+
+def scan(cp_dir, prefix):
+    pattern = os.path.join(cp_dir, prefix + '????????')
+    cp_list = glob.glob(pattern)
+    if len(cp_list) == 0:
+        return None
+    return sorted(cp_list)[-1]
 
 
 def train(a, h):
