@@ -12,11 +12,10 @@ from torch.utils.data import DistributedSampler, DataLoader
 import torch.multiprocessing as mp
 from torch.distributed import init_process_group
 from torch.nn.parallel import DistributedDataParallel
-from env import AttrDict, build_env
 from meldataset import MelDataset, mel_spectrogram, get_dataset_filelist
 from hifigan import Generator, MultiPeriodDiscriminator, MultiScaleDiscriminator, feature_loss, generator_loss,\
     discriminator_loss
-from tools import plot_spectrogram, scan_checkpoint, load_checkpoint, save_checkpoint
+from tools import plot_spectrogram, scan_checkpoint, load_checkpoint, save_checkpoint, AttrDict
 
 torch.backends.cudnn.benchmark = True
 
@@ -235,7 +234,7 @@ def main():
     parser.add_argument('--input_training_file', default='LJSpeech-1.1/training.txt')
     parser.add_argument('--input_validation_file', default='LJSpeech-1.1/validation.txt')
     parser.add_argument('--checkpoint_path', default='cp_hifigan')
-    parser.add_argument('--config', default='')
+    parser.add_argument('--config', default='config.json')
     parser.add_argument('--training_epochs', default=3100, type=int)
     parser.add_argument('--stdout_interval', default=5, type=int)
     parser.add_argument('--checkpoint_interval', default=5000, type=int)
@@ -250,7 +249,11 @@ def main():
 
     json_config = json.loads(data)
     h = AttrDict(json_config)
-    build_env(a.config, 'config.json', a.checkpoint_path)
+    
+    t_path = os.path.join(a.checkpoint_path, 'config.json')
+    if a.config != t_path:
+        os.makedirs(a.config, exist_ok=True)
+        shutil.copyfile(a.config, os.path.join(a.checkpoint_path, 'config.json))
 
     torch.manual_seed(h.seed)
     if torch.cuda.is_available():
