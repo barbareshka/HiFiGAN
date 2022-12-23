@@ -3,9 +3,17 @@ import torch.nn.functional as F
 import torch.nn as nn
 from torch.nn import Conv1d, ConvTranspose1d, AvgPool1d, Conv2d
 from torch.nn.utils import weight_norm, remove_weight_norm, spectral_norm
-from utils import init_weights, get_padding
 
 LRELU_SLOPE = 0.1
+
+def init(m, mean=0.0, std=0.01):
+    classname = m.__class__.__name__
+    if classname.find("Conv") != -1:
+        m.weight.data.normal_(mean, std)
+
+
+def pad(k, d=1):
+    return int((k - 1) * d/2)
 
 
 class ResBlock1(torch.nn.Module):
@@ -14,23 +22,23 @@ class ResBlock1(torch.nn.Module):
         self.h = h
         self.convs1 = nn.ModuleList([
             weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=dilation[0],
-                               padding=get_padding(kernel_size, dilation[0]))),
+                               padding=pad(kernel_size, dilation[0]))),
             weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=dilation[1],
-                               padding=get_padding(kernel_size, dilation[1]))),
+                               padding=pad(kernel_size, dilation[1]))),
             weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=dilation[2],
-                               padding=get_padding(kernel_size, dilation[2])))
+                               padding=pad(kernel_size, dilation[2])))
         ])
-        self.convs1.apply(init_weights)
+        self.convs1.apply(init)
 
         self.convs2 = nn.ModuleList([
             weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=1,
-                               padding=get_padding(kernel_size, 1))),
+                               padding=pad(kernel_size, 1))),
             weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=1,
-                               padding=get_padding(kernel_size, 1))),
+                               padding=pad(kernel_size, 1))),
             weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=1,
-                               padding=get_padding(kernel_size, 1)))
+                               padding=pad(kernel_size, 1)))
         ])
-        self.convs2.apply(init_weights)
+        self.convs2.apply(init)
 
     def forward(self, x):
         for c1, c2 in zip(self.convs1, self.convs2):
@@ -54,11 +62,11 @@ class ResBlock2(torch.nn.Module):
         self.h = h
         self.convs = nn.ModuleList([
             weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=dilation[0],
-                               padding=get_padding(kernel_size, dilation[0]))),
+                               padding=pad(kernel_size, dilation[0]))),
             weight_norm(Conv1d(channels, channels, kernel_size, 1, dilation=dilation[1],
-                               padding=get_padding(kernel_size, dilation[1])))
+                               padding=pad(kernel_size, dilation[1])))
         ])
-        self.convs.apply(init_weights)
+        self.convs.apply(init)
 
     def forward(self, x):
         for c in self.convs:
@@ -94,8 +102,8 @@ class Generator(torch.nn.Module):
                 self.resblocks.append(resblock(h, ch, k, d))
 
         self.conv_post = weight_norm(Conv1d(ch, 1, 7, 1, padding=3))
-        self.ups.apply(init_weights)
-        self.conv_post.apply(init_weights)
+        self.ups.apply(init)
+        self.conv_post.apply(init)
 
     def forward(self, x):
         x = self.conv_pre(x)
@@ -131,10 +139,10 @@ class DiscriminatorP(torch.nn.Module):
         self.period = period
         norm_f = weight_norm if use_spectral_norm == False else spectral_norm
         self.convs = nn.ModuleList([
-            norm_f(Conv2d(1, 32, (kernel_size, 1), (stride, 1), padding=(get_padding(5, 1), 0))),
-            norm_f(Conv2d(32, 128, (kernel_size, 1), (stride, 1), padding=(get_padding(5, 1), 0))),
-            norm_f(Conv2d(128, 512, (kernel_size, 1), (stride, 1), padding=(get_padding(5, 1), 0))),
-            norm_f(Conv2d(512, 1024, (kernel_size, 1), (stride, 1), padding=(get_padding(5, 1), 0))),
+            norm_f(Conv2d(1, 32, (kernel_size, 1), (stride, 1), padding=(2, 0))),
+            norm_f(Conv2d(32, 128, (kernel_size, 1), (stride, 1), padding=(2, 0))),
+            norm_f(Conv2d(128, 512, (kernel_size, 1), (stride, 1), padding=(2, 0))),
+            norm_f(Conv2d(512, 1024, (kernel_size, 1), (stride, 1), padding=(2, 0))),
             norm_f(Conv2d(1024, 1024, (kernel_size, 1), 1, padding=(2, 0))),
         ])
         self.conv_post = norm_f(Conv2d(1024, 1, (3, 1), 1, padding=(1, 0)))
