@@ -21,7 +21,7 @@ Information from the artical:
 
 1) download LJSpeech dataset (you can do it [here](https://keithito.com/LJ-Speech-Dataset/)) and add all .wav files to folder LJSPEECH
 2) install all packages from requirements.txt
-3) write by yourself or (take mine) config file, put it in to the folder initialize/
+3) write by yourself or (take mine) config file, put it in to the main folder
 4) Run training via
 > python training.py
 
