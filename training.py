@@ -16,9 +16,9 @@ from torch.distributed import init_process_group
 from torch.nn.parallel import DistributedDataParallel
 
 from meldataset import MelDataset, MelTunedDataset, mel_spectrogram, get_dataset_filelist
-from hifigan import Generator, MultiPeriodDiscriminator, MultiScaleDiscriminator
+from generator import Generator
+from discriminator import MultiPeriodDiscriminator, MultiScaleDiscriminator
 from losses import f_loss, g_loss, d_loss
-from tools import scan_checkpoint
 
 torch.backends.cudnn.benchmark = True
 
@@ -47,8 +47,8 @@ def train(a, h):
     #print("checkpoints directory : ", a.checkpoint_path)
 
     if os.path.isdir(a.checkpoint_path):
-        cp_g = scan_checkpoint(a.checkpoint_path, 'g_')
-        cp_do = scan_checkpoint(a.checkpoint_path, 'do_')
+        cp_g = scan(a.checkpoint_path, 'g_')
+        cp_do = scan(a.checkpoint_path, 'do_')
 
     steps = 0
     if cp_g is None or cp_do is None:
