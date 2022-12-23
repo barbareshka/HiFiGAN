@@ -17,13 +17,21 @@ Information from the artical:
 
 
 ## Running
+### training
 
-1) download LJSpeech dataset (you can do it [here](https://keithito.com/LJ-Speech-Dataset/)) and add all .wav files to folder LJSPEECH/data
+1) download LJSpeech dataset (you can do it [here](https://keithito.com/LJ-Speech-Dataset/)) and add all .wav files to folder LJSPEECH
 2) install all packages from requirements.txt
 3) write by yourself or (take mine) config file, put it in to the folder initialize/
 4) Run training via
-> python training.py --config initialize/config.json
+> python training.py
 
+
+
+### generating
+1) create special (for test) directory and put wav files there.
+2) put 'generationg.py' from optional/ to the main directory
+3) run generation via
+> python generating.py
 
 ## Possible problems
 I decided to run my code on Google Colab, so there're some notes about running: check you're using GPU
