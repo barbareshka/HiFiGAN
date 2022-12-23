@@ -226,7 +226,6 @@ def main():
         data = f.read()
 
     params = json.loads(data)
-    h = AttrDict(json_config)
 
     torch.manual_seed(params['seed'])
     if torch.cuda.is_available():
@@ -237,7 +236,7 @@ def main():
     else:
         pass
     
-    train(a, h)
+    train(a, params)
 
 
 if __name__ == '__main__':
