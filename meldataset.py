@@ -46,7 +46,14 @@ mel_basis = {}
 hann_window = {}
 
 
-def mel_spectrogram(y, n_fft, num_mels, sampling_rate, hop_size, win_size, fmin, fmax, center=False):
+def mel_spectrogram(y, config, center=False):
+    n_fft = config['n_fft']
+    num_mels = config['num_mels']
+    sampling_rate = config['sampling_rate']
+    hop_size = config['hop_size']
+    win_size = config['win_size']
+    fmin = config['fmin']
+    fmax = config['fmax']
     if torch.min(y) < -1.:
         print('min value is ', torch.min(y))
     if torch.max(y) > 1.:
@@ -134,14 +141,12 @@ class MelDataset(torch.utils.data.Dataset):
                 audio = audio[:, audio_start:audio_start+self.segment_size]
             else:
                 audio = torch.nn.functional.pad(audio, (0, self.segment_size - audio.size(1)), 'constant')
-
-        mel = mel_spectrogram(audio, self.n_fft, self.num_mels,
-                              self.sampling_rate, self.hop_size, self.win_size, self.fmin, self.fmax,
-                              center=False)
-
-        mel_loss = mel_spectrogram(audio, self.n_fft, self.num_mels,
-                                   self.sampling_rate, self.hop_size, self.win_size, self.fmin, self.fmax_loss,
-                                   center=False)
+        mel_conf = {'n_fft': self.n_fft, 'num_mels' : self.num_mels, 'sampling_rate' : self.sampling_rate, 
+                        'hop_size': self.hop_size, 'win_size' : self.win_size, 'fmin' : self.fmin,
+                        'fmax' :  self.fmax}
+        mel = mel_spectrogram(audio, mel_conf, center=False)
+        mel_conf['fmax'] = self.fmax_loss
+        mel_loss = mel_spectrogram(audio, mel_conf, center=False)
 
         return (mel.squeeze(), audio.squeeze(0), filename, mel_loss.squeeze())
 
@@ -149,7 +154,7 @@ class MelDataset(torch.utils.data.Dataset):
         return len(self.audio_files)
     
     
-    class MelTunedDataset(torch.utils.data.Dataset):
+class MelTunedDataset(torch.utils.data.Dataset):
     def __init__(self, training_files, segment_size, n_fft, num_mels,
                  hop_size, win_size, sampling_rate,  fmin, fmax, split=True, shuffle=True, n_cache_reuse=1,
                  device=None, fmax_loss=None, base_mels_path=None):
@@ -218,4 +223,3 @@ class MelDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.audio_files)
-
