@@ -40,6 +40,28 @@ class PD(torch.nn.Module):
         return out, vecs
 
 
+class MPD(torch.nn.Module):
+    def __init__(self):
+        super(MPD, self).__init__()
+        self.discriminators = nn.ModuleList([PD(2), PD(3), PD(5), PD(7), PD(11)])
+
+    def forward(self, y, y_hat):
+        rs = []
+        gs = []
+        vecs_r = []
+        vecs_g = []
+        for i, disc in enumerate(self.discriminators):
+            r, vec_r = disc(y)
+            rs.append(r)
+            vecs_r.append(vec_r)
+
+            g, vec_g = disc(y_hat)
+            gs.append(g)
+            vecs_g.append(vec_g)
+
+        return rs, gs, vecs_r, vecs_g
+
+
 class SD(torch.nn.Module):
     def __init__(self, spec=False):
         super(SD, self).__init__()
@@ -69,28 +91,6 @@ class SD(torch.nn.Module):
         return x, vecs
 
 
-class MPD(torch.nn.Module):
-    def __init__(self):
-        super(MPD, self).__init__()
-        self.discriminators = nn.ModuleList([PD(2), PD(3), PD(5), PD(7), PD(11)])
-
-    def forward(self, y, y_hat):
-        rs = []
-        gs = []
-        vecs_r = []
-        vecs_g = []
-        for i, disc in enumerate(self.discriminators):
-            r, vec_r = disc(y)
-            rs.append(r)
-            vecs_r.append(vec_r)
-
-            g, vec_g = disc(y_hat)
-            gs.append(g)
-            vecs_g.append(vec_g)
-
-        return rs, gs, vecs_r, vecs_g
-
-
 class MSD(torch.nn.Module):
     def __init__(self):
         super(MSD, self).__init__()
@@ -115,4 +115,3 @@ class MSD(torch.nn.Module):
             vecs_g.append(vec_g)
 
         return rs, gs, vecs_r, vecs_g
-
