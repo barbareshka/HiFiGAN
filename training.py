@@ -15,7 +15,7 @@ from torch.nn.parallel import DistributedDataParallel
 from meldataset import MelDataset, MelTunedDataset, mel_spectrogram, get_dataset_filelist
 from hifigan import Generator, MultiPeriodDiscriminator, MultiScaleDiscriminator, feature_loss, generator_loss,\
     discriminator_loss
-from tools import plot_spectrogram, scan_checkpoint, load_checkpoint, save_checkpoint, AttrDict
+from tools import scan_checkpoint, load_checkpoint, save_checkpoint, AttrDict
 
 torch.backends.cudnn.benchmark = True
 
@@ -45,8 +45,8 @@ def train(a, h):
         state_dict_do = None
         last_epoch = -1
     else:
-        state_dict_g = load_checkpoint(cp_g, device)
-        state_dict_do = load_checkpoint(cp_do, device)
+        state_dict_g = torch.load(cp_g, map_location=device)
+        state_dict_do = torch.load(cp_do, map_location=device)
         generator.load_state_dict(state_dict_g['generator'])
         mpd.load_state_dict(state_dict_do['mpd'])
         msd.load_state_dict(state_dict_do['msd'])
@@ -164,18 +164,15 @@ def train(a, h):
 
                 # checkpointing
             if steps % a.checkpoint_interval == 0 and steps != 0:
-                checkpoint_path = "{}/g_{:08d}".format(a.checkpoint_path, steps)
-                save_checkpoint(checkpoint_path,
-                                    {'generator': (generator.module if h['num_gpus'] > 1 else generator).state_dict()})
-                checkpoint_path = "{}/do_{:08d}".format(a.checkpoint_path, steps)
-                save_checkpoint(checkpoint_path, 
-                                    {'mpd': (mpd.module if h['num_gpus'] > 1
+                path1 = "{}/g_{:08d}".format(a.checkpoint_path, steps)
+                path2 = "{}/do_{:08d}".format(a.checkpoint_path, steps)
+                torch.save({'generator': (generator.module if h['num_gpus'] > 1 else generator).state_dict()}, path1)
+                torch.save({'mpd': (mpd.module if h['num_gpus'] > 1
                                                          else mpd).state_dict(),
                                      'msd': (msd.module if h['num_gpus'] > 1
                                                          else msd).state_dict(),
                                      'optim_g': optim_g.state_dict(), 'optim_d': optim_d.state_dict(), 'steps': steps,
-                                     'epoch': epoch})
-
+                                     'epoch': epoch}, path2)
 
                 # Validation
             if steps % a.validation_interval == 0:  # and steps != 0:
