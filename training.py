@@ -21,11 +21,11 @@ torch.backends.cudnn.benchmark = True
 
 
 def train(a, h):
-    if h.num_gpus > 1:
-        init_process_group(backend=h.dist_config['dist_backend'], init_method=h.dist_config['dist_url'],
-                           world_size=h.dist_config['world_size'] * h.num_gpus, rank=0)
+    if h['num_gpus'] > 1:
+        init_process_group(backend=h['dist_config']['dist_backend'], init_method=h['dist_config']['dist_url'],
+                           world_size=h['dist_config']['world_size'] * h['num_gpus'], rank=0)
 
-    torch.cuda.manual_seed(h.seed)
+    torch.cuda.manual_seed(h['seed'])
     device = torch.device('cuda:{:d}'.format(0))
 
     generator = Generator(h).to(device)
@@ -53,48 +53,48 @@ def train(a, h):
         steps = state_dict_do['steps'] + 1
         last_epoch = state_dict_do['epoch']
 
-    if h.num_gpus > 1:
+    if h['num_gpus'] > 1:
         generator = DistributedDataParallel(generator, device_ids=[0]).to(device)
-        mpd = DistributedDataParallel(mpd, device_ids=[rank]).to(device)
-        msd = DistributedDataParallel(msd, device_ids=[rank]).to(device)
+        mpd = DistributedDataParallel(mpd, device_ids=[0]).to(device)
+        msd = DistributedDataParallel(msd, device_ids=[0]).to(device)
 
-    optim_g = torch.optim.AdamW(generator.parameters(), h.learning_rate, betas=[h.adam_b1, h.adam_b2])
+    optim_g = torch.optim.AdamW(generator.parameters(), h['learning_rate'], betas=[h['adam_b1'], h['adam_b2']])
     optim_d = torch.optim.AdamW(itertools.chain(msd.parameters(), mpd.parameters()),
-                                h.learning_rate, betas=[h.adam_b1, h.adam_b2])
+                                h['learning_rate'], betas=[h['adam_b1'], h['adam_b2']])
 
     if state_dict_do is not None:
         optim_g.load_state_dict(state_dict_do['optim_g'])
         optim_d.load_state_dict(state_dict_do['optim_d'])
 
-    scheduler_g = torch.optim.lr_scheduler.ExponentialLR(optim_g, gamma=h.lr_decay, last_epoch=last_epoch)
-    scheduler_d = torch.optim.lr_scheduler.ExponentialLR(optim_d, gamma=h.lr_decay, last_epoch=last_epoch)
+    scheduler_g = torch.optim.lr_scheduler.ExponentialLR(optim_g, gamma=h['lr_decay'], last_epoch=last_epoch)
+    scheduler_d = torch.optim.lr_scheduler.ExponentialLR(optim_d, gamma=h['lr_decay'], last_epoch=last_epoch)
 
     training_filelist, validation_filelist = get_dataset_filelist(a)
     if a.fine_tuning:
-        trainset = MelTunedDataset(training_filelist, h.segment_size, h.n_fft, h.num_mels,
-                          h.hop_size, h.win_size, h.sampling_rate, h.fmin, h.fmax, n_cache_reuse=0,
-                          shuffle=False if h.num_gpus > 1 else True, fmax_loss=h.fmax_for_loss, device=device, base_mels_path=a.input_mels_dir)
+        trainset = MelTunedDataset(training_filelist, h['segment_size'], h['n_fft'], h['num_mels'],
+                          h['hop_size'], h['win_size'], h['sampling_rate'], h['fmin'], h['fmax'], n_cache_reuse=0,
+                          shuffle=True, fmax_loss=h['fmax_for_loss'], device=device, base_mels_path=a.input_mels_dir)
     else: 
-        trainset = MelDataset(training_filelist, h.segment_size, h.n_fft, h.num_mels,
-                          h.hop_size, h.win_size, h.sampling_rate, h.fmin, h.fmax, n_cache_reuse=0,
-                          shuffle=False if h.num_gpus > 1 else True, fmax_loss=h.fmax_for_loss, device=device, base_mels_path=a.input_mels_dir)
+        trainset = MelDataset(training_filelist, h['segment_size'], h['n_fft'], h['num_mels'],
+                          h['hop_size'], h['win_size'], h['sampling_rate'], h['fmin'], h['fmax'], n_cache_reuse=0,
+                          shuffle=True, fmax_loss=h['fmax_for_loss'], device=device, base_mels_path=a.input_mels_dir)
 
-    train_sampler = DistributedSampler(trainset) if h.num_gpus > 1 else None
+    train_sampler = None
 
-    train_loader = DataLoader(trainset, num_workers=h.num_workers, shuffle=False,
+    train_loader = DataLoader(trainset, num_workers=h['num_workers'], shuffle=False,
                               sampler=train_sampler,
-                              batch_size=h.batch_size,
+                              batch_size=h['batch_size'],
                               pin_memory=True,
                               drop_last=True)
 
     if a.fine_tuning:
-        validset = MelTunedDataset(validation_filelist, h.segment_size, h.n_fft, h.num_mels,
-                          h.hop_size, h.win_size, h.sampling_rate, h.fmin, h.fmax, False, False, n_cache_reuse=0,
-                          fmax_loss=h.fmax_for_loss, device=device, base_mels_path=a.input_mels_dir)
+        validset = MelTunedDataset(validation_filelist, h['segment_size'], h['n_fft'], h['num_mels'],
+                          h['hop_size'], h['win_size'], h['sampling_rate'], h['fmin'], h['fmax'], False, False, n_cache_reuse=0,
+                          fmax_loss=h['fmax_for_loss'], device=device, base_mels_path=a.input_mels_dir)
     else:
-        validset = MelDataset(validation_filelist, h.segment_size, h.n_fft, h.num_mels,
-                          h.hop_size, h.win_size, h.sampling_rate, h.fmin, h.fmax, False, False, n_cache_reuse=0,
-                          fmax_loss=h.fmax_for_loss, device=device, base_mels_path=a.input_mels_dir)
+        validset = MelDataset(validation_filelist, h['segment_size'], h['n_fft'], h['num_mels'],
+                          h['hop_size'], h['win_size'], h['sampling_rate'], h['fmin'], h['fmax'], False, False, n_cache_reuse=0,
+                          fmax_loss=h['fmax_for_loss'], device=device, base_mels_path=a.input_mels_dir)
     validation_loader = DataLoader(validset, num_workers=1, shuffle=False,
                                    sampler=None,
                                    batch_size=1,
@@ -109,7 +109,7 @@ def train(a, h):
     for epoch in range(max(0, last_epoch), a.training_epochs):
         print("Epoch: {}".format(epoch+1))
 
-        if h.num_gpus > 1:
+        if h['num_gpus'] > 1:
             train_sampler.set_epoch(epoch)
 
         for i, batch in enumerate(train_loader):
@@ -120,8 +120,8 @@ def train(a, h):
             y = y.unsqueeze(1)
 
             y_g_hat = generator(x)
-            y_g_hat_mel = mel_spectrogram(y_g_hat.squeeze(1), h.n_fft, h.num_mels, h.sampling_rate, h.hop_size, h.win_size,
-                                          h.fmin, h.fmax_for_loss)
+            y_g_hat_mel = mel_spectrogram(y_g_hat.squeeze(1), h['n_fft'], h['num_mels'], h['sampling_rate'], h['hop_size'], h['win_size'],
+                                          h['fmin'], h['fmax_for_loss'])
 
             optim_d.zero_grad()
 
@@ -166,20 +166,16 @@ def train(a, h):
             if steps % a.checkpoint_interval == 0 and steps != 0:
                 checkpoint_path = "{}/g_{:08d}".format(a.checkpoint_path, steps)
                 save_checkpoint(checkpoint_path,
-                                    {'generator': (generator.module if h.num_gpus > 1 else generator).state_dict()})
+                                    {'generator': (generator.module if h['num_gpus'] > 1 else generator).state_dict()})
                 checkpoint_path = "{}/do_{:08d}".format(a.checkpoint_path, steps)
                 save_checkpoint(checkpoint_path, 
-                                    {'mpd': (mpd.module if h.num_gpus > 1
+                                    {'mpd': (mpd.module if h['num_gpus'] > 1
                                                          else mpd).state_dict(),
-                                     'msd': (msd.module if h.num_gpus > 1
+                                     'msd': (msd.module if h['num_gpus'] > 1
                                                          else msd).state_dict(),
                                      'optim_g': optim_g.state_dict(), 'optim_d': optim_d.state_dict(), 'steps': steps,
                                      'epoch': epoch})
 
-                # Tensorboard summary logging
-            if steps % a.summary_interval == 0:
-                sw.add_scalar("training/gen_loss_total", loss_gen_all, steps)
-                sw.add_scalar("training/mel_spec_error", mel_error, steps)
 
                 # Validation
             if steps % a.validation_interval == 0:  # and steps != 0:
@@ -191,25 +187,11 @@ def train(a, h):
                         x, y, _, y_mel = batch
                         y_g_hat = generator(x.to(device))
                         y_mel = torch.autograd.Variable(y_mel.to(device, non_blocking=True))
-                        y_g_hat_mel = mel_spectrogram(y_g_hat.squeeze(1), h.n_fft, h.num_mels, h.sampling_rate,
-                                                      h.hop_size, h.win_size,
-                                                      h.fmin, h.fmax_for_loss)
+                        y_g_hat_mel = mel_spectrogram(y_g_hat.squeeze(1), h['n_fft'], h['num_mels'], h['sampling_rate'],
+                                                      h['hop_size'], h['win_size'],
+                                                      h['fmin'], h['fmax_for_loss'])
                         val_err_tot += F.l1_loss(y_mel, y_g_hat_mel).item()
-
-                        if j <= 4:
-                            if steps == 0:
-                                sw.add_audio('gt/y_{}'.format(j), y[0], steps, h.sampling_rate)
-                                sw.add_figure('gt/y_spec_{}'.format(j), plot_spectrogram(x[0]), steps)
-
-                            sw.add_audio('generated/y_hat_{}'.format(j), y_g_hat[0], steps, h.sampling_rate)
-                            y_hat_spec = mel_spectrogram(y_g_hat.squeeze(1), h.n_fft, h.num_mels,
-                                                             h.sampling_rate, h.hop_size, h.win_size,
-                                                             h.fmin, h.fmax)
-                             sw.add_figure('generated/y_hat_spec_{}'.format(j),
-                                              plot_spectrogram(y_hat_spec.squeeze(0).cpu().numpy()), steps)
-
                     val_err = val_err_tot / (j+1)
-                    sw.add_scalar("validation/mel_spec_error", val_err, steps)
 
                 generator.train()
 
@@ -229,7 +211,7 @@ def main():
     parser.add_argument('--input_mels_dir', default='ft_dataset')
     parser.add_argument('--input_training_file', default='LJSpeech-1.1/training.txt')
     parser.add_argument('--input_validation_file', default='LJSpeech-1.1/validation.txt')
-    parser.add_argument('--checkpoint_path', default='cp_hifigan')
+    parser.add_argument('--checkpoint_path', default='logits')
     parser.add_argument('--config', default='config.json')
     parser.add_argument('--training_epochs', default=3100, type=int)
     parser.add_argument('--stdout_interval', default=5, type=int)
@@ -243,22 +225,19 @@ def main():
     with open(a.config) as f:
         data = f.read()
 
-    json_config = json.loads(data)
+    params = json.loads(data)
     h = AttrDict(json_config)
 
-    torch.manual_seed(h.seed)
+    torch.manual_seed(params['seed'])
     if torch.cuda.is_available():
-        torch.cuda.manual_seed(h.seed)
-        h.num_gpus = torch.cuda.device_count()
-        h.batch_size = int(h.batch_size / h.num_gpus)
-        print('Batch size per GPU :', h.batch_size)
+        torch.cuda.manual_seed(params['seed'])
+        params['num_gpus'] = torch.cuda.device_count()
+        params['batch_size'] = int(params['batch_size'] / params['num_gpus'])
+        print('Batch size per GPU :', params['batch_size'])
     else:
         pass
-
-    if h.num_gpus > 1:
-        mp.spawn(train, nprocs=h.num_gpus, args=(a, h,))
-    else:
-        train(a, h)
+    
+    train(a, h)
 
 
 if __name__ == '__main__':
