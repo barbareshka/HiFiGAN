@@ -1,9 +1,8 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-
-from nn import Conv1d, ConvTranspose1d
-from nn.utils import weight_norm, remove_weight_norm
+import torch.nn as nn
+from torch.nn import Conv1d, ConvTranspose1d
+from torch.nn.utils import weight_norm, remove_weight_norm
 
 def init(obj, mean=0.0, std=0.01):
     classname = obj.__class__.__name__
@@ -11,8 +10,7 @@ def init(obj, mean=0.0, std=0.01):
         obj.weight.data.normal_(mean, std)
 
 def pad(k, d=1):
-    res = (k - 1) * d / 2
-    return int(res)
+    return int((k - 1) * d / 2)
 
 
 class ResBlock(torch.nn.Module):
@@ -31,7 +29,7 @@ class ResBlock(torch.nn.Module):
 
         self.convs1.apply(init)
         self.convs2.apply(init)
-
+    
     def remove_weight_norm(self):
         for _ in self.convs1:
             remove_weight_norm(_)
@@ -69,12 +67,12 @@ class Generator(torch.nn.Module):
         self.post = weight_norm(Conv1d(ch, 1, 7, 1, padding=3))
         self.ups.apply(init)
         self.post.apply(init)
-        
+
     def remove_weight_norm(self):
-        for l in self.ups:
-            remove_weight_norm(l)
-        for l in self.resblocks:
-            l.remove_weight_norm()
+        for _ in self.ups:
+            remove_weight_norm(_)
+        for _ in self.resblocks:
+            _.remove_weight_norm()
         remove_weight_norm(self.pre)
         remove_weight_norm(self.post)
 
@@ -91,6 +89,3 @@ class Generator(torch.nn.Module):
             output = out / self.kernels
         output = torch.tanh(self.post(F.leaky_relu(output)))
         return output
-
-
-
