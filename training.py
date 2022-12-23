@@ -15,7 +15,7 @@ from torch.nn.parallel import DistributedDataParallel
 from meldataset import MelDataset, MelTunedDataset, mel_spectrogram, get_dataset_filelist
 from hifigan import Generator, MultiPeriodDiscriminator, MultiScaleDiscriminator, feature_loss, generator_loss,\
     discriminator_loss
-from tools import scan_checkpoint, load_checkpoint, save_checkpoint, AttrDict
+from tools import scan_checkpoint
 
 torch.backends.cudnn.benchmark = True
 
