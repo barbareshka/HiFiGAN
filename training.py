@@ -71,11 +71,14 @@ def train(rank, a, h):
     scheduler_d = torch.optim.lr_scheduler.ExponentialLR(optim_d, gamma=h.lr_decay, last_epoch=last_epoch)
 
     training_filelist, validation_filelist = get_dataset_filelist(a)
-
-    trainset = MelDataset(training_filelist, h.segment_size, h.n_fft, h.num_mels,
+    if a.fine_tuning:
+        trainset = MelTunedDataset(training_filelist, h.segment_size, h.n_fft, h.num_mels,
                           h.hop_size, h.win_size, h.sampling_rate, h.fmin, h.fmax, n_cache_reuse=0,
-                          shuffle=False if h.num_gpus > 1 else True, fmax_loss=h.fmax_for_loss, device=device,
-                          fine_tuning=a.fine_tuning, base_mels_path=a.input_mels_dir)
+                          shuffle=False if h.num_gpus > 1 else True, fmax_loss=h.fmax_for_loss, device=device, base_mels_path=a.input_mels_dir)
+    else: 
+        trainset = MelDataset(training_filelist, h.segment_size, h.n_fft, h.num_mels,
+                          h.hop_size, h.win_size, h.sampling_rate, h.fmin, h.fmax, n_cache_reuse=0,
+                          shuffle=False if h.num_gpus > 1 else True, fmax_loss=h.fmax_for_loss, device=device, base_mels_path=a.input_mels_dir)
 
     train_sampler = DistributedSampler(trainset) if h.num_gpus > 1 else None
 
